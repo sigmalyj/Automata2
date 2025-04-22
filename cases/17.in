@@ -1,12 +1,3 @@
-type: nfa
-hidden: true
-states: 5
-final: 4
-rules:
-0->1 \e
-1->2 a
-2->2 a
-2->3 \e
-3->1 \e
-3->4 b
-input: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac
+type: find
+pattern: jQuery\d+_\d+\(\[.*?(\{.*\}).*?\]\)
+input: jQuery110101930611153683197_1684118629327([{"dwmc":"shuxuekexuexi","kcflmc":"yanjiusheng","kch":"60420153","kcm":"yingyongjinshidaishu","kkdwnm":"042","ksdd":"","ksrq":"","ksrs":0,"kxh":"0","xm":""}])

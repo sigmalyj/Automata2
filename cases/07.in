@@ -1,5 +1,3 @@
-type: nfa
-states: 1
-final: 0
-rules:
-input: 
+type: find
+pattern: (src|href)\s*=\s*(.+);?
+input: location.href = "www.baidu.com";
