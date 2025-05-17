@@ -4,6 +4,10 @@
 #include "nfa.h"
 #include "parser/regexLexer.h"
 #include "parser/regexParser.h"
+#include <unordered_set>
+#include <vector>
+#include <string>
+#include <functional>
 
 /**
  * 本文件（包括对应的cpp文件）中已经定义好了一些类和函数，类内也已经定义好了一些成员变量和方法。不建议大家修改这些已经定义好的东西。
@@ -69,6 +73,14 @@ private:
     regexLexer *antlrLexer = nullptr;
     antlr4::CommonTokenStream *antlrTokenStream = nullptr;
     regexParser *antlrParser = nullptr;
+
+    /**
+     * 辅助函数：递归构造 NFA。
+     * @param node 当前语法树节点
+     * @param start 当前 NFA 的起始状态
+     * @param end 当前 NFA 的接受状态
+     */
+    void buildNFA(antlr4::tree::ParseTree *node, int start, int end, const std::string &flags);
 };
 
 #endif //CPP_REGEX_H

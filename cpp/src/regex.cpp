@@ -14,9 +14,89 @@
  * @param flags 正则表达式的修饰符
  */
 void Regex::compile(const std::string &pattern, const std::string &flags) {
-    regexParser::RegexContext *tree = Regex::parse(pattern); // 这是语法分析树
-    // TODO 第二次实验中，请你完成这个函数
-    //
+    // 解析正则表达式，生成语法分析树
+    regexParser::RegexContext *tree = Regex::parse(pattern);
+
+    // 初始化 NFA 的状态
+    nfa.num_states = 0; // 状态计数初始化
+    nfa.rules.clear();
+    nfa.is_final.clear();
+
+    // 创建起始状态和接受状态
+    int startState = nfa.num_states++;
+    int acceptState = nfa.num_states++;
+    nfa.rules.resize(nfa.num_states); // 确保规则列表大小与状态数一致
+    nfa.is_final.resize(nfa.num_states, false);
+    nfa.is_final[acceptState] = true;
+
+    // 构造 NFA
+    buildNFA(tree, startState, acceptState, flags);
+
+    // 设置 NFA 的起始状态和接受状态
+    nfa.is_final[acceptState] = true;
+}
+/**
+ * 递归构造 NFA 的辅助函数。
+ * @param node 当前语法树节点
+ * @param start 当前 NFA 的起始状态
+ * @param end 当前 NFA 的接受状态
+ * @param flags 正则表达式的修饰符
+ */
+void Regex::buildNFA(antlr4::tree::ParseTree *node, int start, int end, const std::string &flags) {
+    if (nfa.rules.size() <= std::max(start, end)) {
+        nfa.rules.resize(std::max(start, end) + 1);
+    }
+
+    if (auto regexNode = dynamic_cast<regexParser::RegexContext *>(node)) {
+        // regex: expression ('|' expression)* ;
+        int previousState = start;
+        for (size_t i = 0; i < regexNode->expression().size(); ++i) {
+            int nextState = (i == regexNode->expression().size() - 1) ? end : nfa.num_states++;
+            if (nfa.rules.size() <= nextState) {
+                nfa.rules.resize(nextState + 1);
+            }
+            buildNFA(regexNode->expression(i), previousState, nextState, flags);
+            previousState = nextState;
+        }
+    } else if (auto expressionNode = dynamic_cast<regexParser::ExpressionContext *>(node)) {
+        // expression: expressionItem+ ;
+        int currentStart = start;
+        for (size_t i = 0; i < expressionNode->expressionItem().size(); ++i) {
+            int nextState = (i == expressionNode->expressionItem().size() - 1) ? end : nfa.num_states++;
+            if (nfa.rules.size() <= nextState) {
+                nfa.rules.resize(nextState + 1);
+            }
+            buildNFA(expressionNode->expressionItem(i), currentStart, nextState, flags);
+            currentStart = nextState;
+        }
+    } else if (auto itemNode = dynamic_cast<regexParser::ExpressionItemContext *>(node)) {
+        // expressionItem: normalItem quantifier? ;
+        if (itemNode->quantifier()) {
+            int loopStart = nfa.num_states++;
+            int loopEnd = nfa.num_states++;
+            if (nfa.rules.size() <= loopEnd) {
+                nfa.rules.resize(loopEnd + 1);
+            }
+            buildNFA(itemNode->normalItem(), loopStart, loopEnd, flags);
+
+            // 处理量词
+            if (itemNode->quantifier()->quantifierType()->ZeroOrMoreQuantifier()) {
+                nfa.rules[start].push_back({loopStart, EPSILON, "", ""});
+                nfa.rules[loopEnd].push_back({loopStart, EPSILON, "", ""});
+                nfa.rules[loopEnd].push_back({end, EPSILON, "", ""});
+                nfa.rules[start].push_back({end, EPSILON, "", ""});
+            } else if (itemNode->quantifier()->quantifierType()->OneOrMoreQuantifier()) {
+                nfa.rules[loopEnd].push_back({loopStart, EPSILON, "", ""});
+                nfa.rules[loopEnd].push_back({end, EPSILON, "", ""});
+            } else if (itemNode->quantifier()->quantifierType()->ZeroOrOneQuantifier()) {
+                nfa.rules[start].push_back({end, EPSILON, "", ""});
+                nfa.rules[start].push_back({loopStart, EPSILON, "", ""});
+                nfa.rules[loopEnd].push_back({end, EPSILON, "", ""});
+            }
+        } else {
+            buildNFA(itemNode->normalItem(), start, end, flags);
+        }
+    }
 }
 
 /**
@@ -27,8 +107,19 @@ void Regex::compile(const std::string &pattern, const std::string &flags) {
  * @return 如上所述
  */
 std::vector<std::string> Regex::match(std::string text) {
-    // TODO 第二次实验中，请你完成这个函数
-    //
+    // 使用 NFA 的 exec 方法执行匹配
+    Path result = nfa.exec(text);
+
+    // 如果匹配成功，返回匹配的路径
+    if (!result.states.empty()) {
+        std::string matched;
+        for (const auto &consume : result.consumes) {
+            matched += consume;
+        }
+        return {matched};
+    }
+
+    // 匹配失败，返回空数组
     return {};
 }
 
