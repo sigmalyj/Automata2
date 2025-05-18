@@ -1,0 +1,5 @@
+settings set target.run-args "../../cases/01.in"
+breakpoint set --file regex.cpp --name Regex::compile
+breakpoint set --file regex.cpp --name Regex::match
+b regex.cpp:128
+breakpoint set --file nfa.cpp --name NFA::exec

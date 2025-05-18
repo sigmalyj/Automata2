@@ -44,7 +44,7 @@ struct Rule {
 struct Path {
     std::vector<int> states; // 从初态到终态经历的状态列表。开头必须是0。
     std::vector<std::string> consumes; // 长度必须为states的长度-1。consumes[i]表示states[i]迁移到states[i+1]时所消耗的字母（若是ε转移，则应设为空串""）
-
+    std::string matched_text; // 该路径所匹配的文本。注意：matched_text的长度可能小于等于输入字符串的长度。
     static Path reject() { return Path{}; }
 };
 
