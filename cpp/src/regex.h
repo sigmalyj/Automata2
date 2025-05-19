@@ -81,6 +81,7 @@ private:
      * @param end 当前 NFA 的接受状态
      */
     void buildNFA(antlr4::tree::ParseTree *node, int start, int end, const std::string &flags);
+    char parseSpecialChar(const std::string &sequence);
 };
 
 #endif //CPP_REGEX_H

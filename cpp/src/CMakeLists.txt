@@ -1,4 +1,4 @@
-set(CMAKE_BUILD_TYPE Debug) # 设置构建类型为 Debug
+# set(CMAKE_BUILD_TYPE Debug) # 设置构建类型为 Debug
 cmake_minimum_required(VERSION 3.15)
 project(cpp)
 
@@ -32,7 +32,7 @@ if (X_ASAN)
     endif ()
 endif ()
 
-add_compile_options(-g) # 添加调试符号
+# add_compile_options(-g) # 添加调试符号
 add_executable(nfa main-nfa.cpp nfa.cpp nfa.h utils.h)
 
 file(GLOB PARSER_SRC "../parser/*.cpp")
