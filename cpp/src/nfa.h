@@ -36,7 +36,6 @@ struct Rule {
     std::string by; // 对特殊字符转移，这里只有一个字母，如d；对字符区间转移，这里是区间的开头，如a；对一般转移，这里就是转移所需的字母；对epsilon-转移，这里固定为空串。
     std::string to; // 对字符区间转移，这里是区间的结尾，如z；对任何其他类型的转移，这里固定为空串。
     std::vector<Rule> negativeRules;
-    std::vector<Rule> negativeRules;
 };
 
 /**

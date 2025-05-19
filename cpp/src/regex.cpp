@@ -333,60 +333,6 @@ void Regex::compile(const std::string &pattern, const std::string &flags) {
     buildNFA(tree, 0, 1, flags);
 }
 
-/**
- * 分析出现的特殊转义字符并进行处理。
- * 能处理以下情况：
- * 1. 常见控制字符的转义序列，如 \n (换行符), \t (制表符) 等。
- * 2. 十六进制转义序列，形式为 \xHH，其中 HH 是十六进制数字，用于表示 ASCII 字符。
- *    如果序列不合法或超出 ASCII 范围，将捕获并处理异常，返回空字符。
- * 3. 如果输入的字符串不符合上述任何一种格式，函数默认返回字符串的第二个字符。
- *    这一默认行为假设输入的字符串总是表示一个有效的转义序列。
- * @param sequence: 代表可能包含转义序列的字符串。
- * @return 对应于转义序列的字符，或在处理错误时返回空字符('\0')。
- */
-char Regex::parseSpecialChar(const std::string &sequence) {
-    // 处理常见控制字符的转义序列
-    static const std::unordered_map<std::string, char> escapeMap = {
-        {"\\f", '\f'},
-        {"\\n", '\n'},
-        {"\\r", '\r'},
-        {"\\t", '\t'},
-        {"\\v", '\v'}
-    };
-
-    // 处理固定的转义字符
-    auto it = escapeMap.find(sequence);
-    if (it != escapeMap.end()) {
-        return it->second;
-    }
-
-    // 处理十六进制转义序列 \xHH
-    if (sequence.size() > 2 && sequence[0] == '\\' && sequence[1] == 'x') {
-        try {
-            size_t processedChars = 0;
-            int asciiValue = std::stoi(sequence.substr(2), &processedChars, 16);
-            if (processedChars != sequence.size() - 2) {
-                throw std::runtime_error("无效的十六进制序列");
-            }
-            return static_cast<char>(asciiValue);
-        } catch (const std::exception&) {
-            return '\0'; // 返回空字符代表错误
-        }
-    }
-
-    // 处理预定义字符类
-    if (sequence == "\\w") return 'w';
-    if (sequence == "\\W") return 'W';
-    if (sequence == "\\d") return 'd';
-    if (sequence == "\\D") return 'D';
-    if (sequence == "\\s") return 's';
-    if (sequence == "\\S") return 'S';
-
-    // 默认返回第二个字符，假设输入总是有效的
-    return sequence.size() > 1 ? sequence[1] : '\0';
-}
-
-
 
 /**
  * 在给定的输入文本上，进行正则表达式匹配，返回匹配到的第一个结果。
