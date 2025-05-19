@@ -178,7 +178,7 @@ void Regex::buildNFA(antlr4::tree::ParseTree *node, int start, int end, const st
         }
         else if (auto* group = normalItem->group()) {
             // 处理组
-            if (group->regex()) {
+            if (group && group->regex()) {
                 buildNFA(group->regex(), start, end, flags);
             }
         }
@@ -186,6 +186,10 @@ void Regex::buildNFA(antlr4::tree::ParseTree *node, int start, int end, const st
         // 再处理量词
         if (quantifier) {
             std::string quantText = quantifier->getText();
+            if (quantText.empty())
+            {
+                throw std::runtime_error("量词解析失败！");
+            }
             bool isLazy = (quantifier->lazyModifier() != nullptr);
             
             // 为量词创建新的开始和结束状态
@@ -477,18 +481,20 @@ void Regex::buildNFA(antlr4::tree::ParseTree *node, int start, int end, const st
  * @return 如上所述
  */
 std::vector<std::string> Regex::match(std::string text) {
-    // 使用 NFA 的 exec 方法执行匹配
-    Path result = nfa.exec(text);
-
-    // 如果匹配成功，返回匹配的文本
-    if (!result.states.empty()) {
-        return {result.matched_text};
+    // 遍历文本的每个位置，尝试匹配
+    for (int i = 0; i < text.size(); i++) {
+        Path path = nfa.exec(text.substr(i));
+        if (!path.states.empty()) {
+            // 构造匹配结果字符串
+            std::string matchedStr;
+            for (const auto& ch : path.consumes) {
+                matchedStr += ch;
+            }
+            return {matchedStr}; // 返回包含匹配结果的数组
+        }
     }
-
-    // 匹配失败，返回空数组
-    return {};
-}
-/**
+    return {}; // 匹配失败返回空数组
+}/**
  * 解析正则表达式的字符串，生成语法分析树。
  * 你应该在compile函数中调用一次本函数，以得到语法分析树。
  * 通常，你不需要改动此函数，也不需要理解此函数实现每一行的具体含义。

@@ -8,3 +8,6 @@ breakpoint set --file regex.cpp --name Regex::match
 b regex.cpp:125
 breakpoint set --file nfa.cpp --name NFA::exec
 
+程序思路：
+1. 解析特殊转义字符
+2. 从最底层开始建立简单的自动机，然后自底而上地将自动机进行合并
