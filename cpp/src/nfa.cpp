@@ -54,7 +54,18 @@ Path NFA::exec(std::string text)
     stack<tuple<int, string, Path>> s;
     s.push({0, text, Path()});      // 初态，输入字符串，初始路径
     set<pair<int, string>> visited; // 使用一个集合记录访问过的状态和输入位置组合
+Path NFA::exec(std::string text)
+{
+    // 初始化一个栈，栈中存放当前状态、剩余字符串和路径
+    stack<tuple<int, string, Path>> s;
+    s.push({0, text, Path()});      // 初态，输入字符串，初始路径
+    set<pair<int, string>> visited; // 使用一个集合记录访问过的状态和输入位置组合
 
+    while (!s.empty())
+    {
+        // 获取当前状态、剩余字符串和路径
+        auto [state, str, path] = s.top();
+        s.pop();
     while (!s.empty())
     {
         // 获取当前状态、剩余字符串和路径
@@ -67,16 +78,38 @@ Path NFA::exec(std::string text)
             continue;
         }
         visited.insert({state, str}); // 标记当前状态和剩余字符串的组合为已访问
+        // 如果当前状态和剩余字符串的组合已经访问过，跳过
+        if (visited.count({state, str}) > 0)
+        {
+            continue;
+        }
+        visited.insert({state, str}); // 标记当前状态和剩余字符串的组合为已访问
 
         // 将当前状态加入路径
         path.states.push_back(state);
+        // 将当前状态加入路径
+        path.states.push_back(state);
 
-        // 如果当前状态是终态，且字符串已经消耗完毕，返回路径
+        // 如果当前状态是终态，返回路径
         if (is_final[state])
         {
             return path;
         }
 
+        // 遍历当前状态的所有转移规则
+        for (const auto &rule : rules[state])
+        {
+            if (rule.type == EPSILON)
+            {                                    // epsilon-转移
+                Path new_path = path;            // 复制当前路径
+                new_path.consumes.push_back(""); // 记录空字符消耗
+                s.push({rule.dst, str, new_path});
+            }
+            else if (!str.empty() && MatchRule(rule, str[0]))
+            {                                                  // 一般转移
+                Path new_path = path;                          // 复制当前路径
+                new_path.consumes.push_back(str.substr(0, 1)); // 记录消耗的字符
+                s.push({rule.dst, str.substr(1), new_path});
         // 遍历当前状态的所有转移规则
         for (const auto &rule : rules[state])
         {
@@ -98,6 +131,7 @@ Path NFA::exec(std::string text)
     // 如果没有找到路径，返回拒绝
     return Path::reject();
 }
+
 /**
  * 将Path转为（序列化为）文本的表达格式（以便于通过stdout输出）
  * 你不需要理解此函数的含义、阅读此函数的实现和调用此函数。
