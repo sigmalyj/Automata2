@@ -113,17 +113,21 @@ class NFA:
                     best_match_len = match_len
                     log(f"发现终态匹配: {state}, 匹配长度: {match_len}")
             
-            # 首先添加非epsilon转移 - 优先消耗字符(贪婪)
+            # 添加各类型的转移
             normal_transitions = []
             epsilon_transitions = []
+            negative_transitions = []
             
             for rule in self.rules[state]:
                 if rule.type == RuleType.EPSILON:
                     epsilon_transitions.append(rule)
+                elif rule.type == RuleType.NEGATIVE:
+                    if pos < len(text):
+                        negative_transitions.append(rule)
                 elif pos < len(text) and self.match_rule(rule, text[pos]):
                     normal_transitions.append(rule)
             
-            # 先处理正常转移(贪婪匹配)
+            # 处理正常转移(贪婪匹配)
             for rule in normal_transitions:
                 log(f"  匹配字符 '{text[pos]}' 转移到状态 {rule.dst}")
                 # 一般转移
@@ -133,7 +137,36 @@ class NFA:
                 new_path.consumes.append(text[pos])  # 记录消耗的字符
                 stack.append((rule.dst, pos + 1, new_path))
             
-            # 再处理epsilon转移
+            # 处理负向转移
+            for rule in negative_transitions:
+                # 初始假设转移是有效的
+                valid_transition = True
+                
+                # 遍历所有负向规则
+                for neg_rule in rule.negativeRules:
+                    if neg_rule.type == RuleType.NORMAL:
+                        if text[pos] == neg_rule.by:
+                            valid_transition = False  # 字符匹配，负向条件失败
+                            break
+                    elif neg_rule.type == RuleType.SPECIAL:
+                        if self.match_rule(neg_rule, text[pos]):
+                            valid_transition = False  # 特殊字符匹配，负向条件失败
+                            break
+                    elif neg_rule.type == RuleType.RANGE:
+                        if neg_rule.by <= text[pos] <= neg_rule.to:
+                            valid_transition = False  # 范围匹配，负向条件失败
+                            break
+                
+                # 如果转移有效（所有负向规则都不匹配当前字符）
+                if valid_transition:
+                    log(f"  负向匹配字符 '{text[pos]}' 转移到状态 {rule.dst}")
+                    new_path = Path()
+                    new_path.states = path.states[:]
+                    new_path.consumes = path.consumes[:]
+                    new_path.consumes.append(text[pos])  # 记录消耗的字符
+                    stack.append((rule.dst, pos + 1, new_path))
+            
+            # 处理epsilon转移
             for rule in epsilon_transitions:
                 log(f"  尝试 ε-转移 到状态 {rule.dst}")
                 # epsilon-转移
