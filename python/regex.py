@@ -9,83 +9,245 @@ from antlr4 import CommonTokenStream, InputStream
 
 from antlr_parser.regexLexer import regexLexer
 from antlr_parser.regexParser import regexParser
-from nfa import NFA
+from nfa import NFA, Rule, RuleType, Path
 
-"""
-本文件中已经定义好了一些类和函数，类内也已经定义好了一些成员变量和方法。不建议大家修改这些已经定义好的东西。
-但是，为了实现功能，你可以自由地增加新的函数、类等，包括可以在已经定义好的类自由地添加新的成员变量和方法。
 
-本文件可以直接作为python的入口点文件。
-支持两种运行方式：
-1、将输入文件的文件名作为唯一的命令行参数传入。
-   例如: python regex.py ../cases/01.txt
-2、若不传入任何参数，则程序将从stdin中读取输入。
-"""
-"""
-- 保证正则表达式字符串和待操作的文本内容都仅包含ASCII字符，且不包含'\0'。
-  - 仅保证pattern不含和换行符'\r' '\n'，但文本串可以含有换行符！
-- 具体要求支持和实现的内容列表，请阅读实验文档的“任务说明”部分。
-- 第二次实验需要实现compile函数（将正则表达式编译为NFA），和match函数（返回串中第一个匹配结果）。
-  - 要求支持的特殊字符包括 . \d \w \s \D \W \S
-  - 要求支持的flags只有's'一种。
-- 正则表达式中各种字符的具体定义可查看 https://www.runoob.com/regexp/regexp-metachar.html 
-"""
+class NFAPosition:
+    """
+    表示NFA的起始和结束状态。
+    """
+    def __init__(self, left: int, right: int):
+        self.left = left
+        self.right = right
 
 
 class Regex:
     """
     表示一个正则表达式的类。
     """
-    nfa: NFA  # 正则表达式所使用的NFA
+    def __init__(self):
+        self.nfa = NFA()  # 正则表达式所使用的NFA
+        self.flags = ""  # 正则表达式的修饰符
 
     @staticmethod
     def parse(pattern: str) -> regexParser.RegexContext:
         """
         解析正则表达式的字符串，生成语法分析树。
-        你应该在compile函数中调用一次本函数，以得到语法分析树。
-        通常，你不需要改动此函数，也不需要理解此函数实现每一行的具体含义。
-        但是，你应当对语法分析树的数据结构(RegexContext)有一定的理解，作业文档中有相关的教程可供参考。
-        :param pattern 要解析的正则表达式的字符串
-        :return regexParser.RegexContext类的对象
         """
         input_stream = InputStream(pattern)
         lexer = regexLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = regexParser(stream)
         tree = parser.regex()
-        errCount = parser.getNumberOfSyntaxErrors()
-        if errCount > 0: raise ValueError("parser解析失败，表达式中有" + str(errCount) + "个语法错误！")
-        if stream.LA(1) != antlr4.Token.EOF: raise ValueError(
-            "parser解析失败，解析过程未能到达字符串结尾，可能是由于表达式中间有无法解析的内容！已解析的部分：" +
-            stream.getText(0, stream.index - 1))
+        err_count = parser.getNumberOfSyntaxErrors()
+        if err_count > 0:
+            raise ValueError(f"parser解析失败，表达式中有{err_count}个语法错误！")
         return tree
 
-    def compile(self, pattern: str, flags="") -> None:
+    def compile(self, pattern: str, flags: str = "") -> None:
         """
-        编译给定的正则表达式。
-        具体包括两个过程：解析正则表达式得到语法分析树（这步已经为你写好，即parse方法），
-        和在语法分析树上进行分析（遍历），构造出NFA（需要你完成的部分）。
-        在语法分析树上进行分析的方法，可以是直接自行访问该树，也可以是使用antlr的Visitor机制，详见作业文档。
-        你编译产生的结果，NFA应保存在self.nfa中，其他内容也建议保存在当前对象下。
-        :param pattern 正则表达式的字符串
-        :param flags 正则表达式的修饰符
+        编译给定的正则表达式，构造NFA。
         """
-        tree = Regex.parse(pattern)  # 这是语法分析树
-        # TODO 第二次实验中，请你完成这个函数
-        #
+        self.flags = flags
+        tree = self.parse(pattern)
+        nfa_position = self._nfa_regex(tree)
+        self.nfa.is_final = [False] * self.nfa.num_states
+        self.nfa.is_final[nfa_position.right] = True
 
     def match(self, text: str) -> List[str]:
         """
         在给定的输入文本上，进行正则表达式匹配，返回匹配到的第一个结果。
-        匹配不成功时，返回空数组[]；
-        第二次实验中，匹配成功时，返回仅含一个元素的字符串数组，那个唯一的元素即为匹配结果。例：["abcd"]
-        :param text 输入的文本
-        :return 如上所述
         """
-        # TODO 第二次实验中，请你完成这个函数
-        #
+        for i in range(len(text)):
+            path = self.nfa.exec(text[i:])
+            if path:
+                match_result = "".join(path.consumes)
+                return [match_result]
         return []
 
+    def _nfa_regex(self, node: regexParser.RegexContext) -> NFAPosition:
+        """
+        构造整个正则表达式的NFA。
+        """
+        start_state = self.nfa.num_states
+        self.nfa.num_states += 1
+        self.nfa.rules.append([])
+
+        sub_positions = []
+        for expression in node.expression():
+            sub_position = self._nfa_expression(expression)
+            sub_positions.append(sub_position)
+
+            # 从正则表达式的初态到每个子表达式的初态创建ε转移
+            self.nfa.rules[start_state].append(Rule(dst=sub_position.left, type=RuleType.EPSILON))
+
+        end_state = self.nfa.num_states
+        self.nfa.num_states += 1
+        self.nfa.rules.append([])
+
+        # 从每个子表达式的终态到正则表达式的终态创建ε转移
+        for sub_position in sub_positions:
+            self.nfa.rules[sub_position.right].append(Rule(dst=end_state, type=RuleType.EPSILON))
+
+        return NFAPosition(start_state, end_state)
+
+    def _nfa_expression(self, node: regexParser.ExpressionContext) -> NFAPosition:
+        """
+        构造表达式的NFA。
+        """
+        positions = [self._nfa_expression_item(item) for item in node.expressionItem()]
+
+        if not positions:
+            return NFAPosition(self.nfa.num_states, self.nfa.num_states)
+
+        for i in range(len(positions) - 1):
+            self.nfa.rules[positions[i].right].append(Rule(dst=positions[i + 1].left, type=RuleType.EPSILON))
+
+        return NFAPosition(positions[0].left, positions[-1].right)
+
+    def _nfa_expression_item(self, node: regexParser.ExpressionItemContext) -> NFAPosition:
+        """
+        构造表达式项的NFA。
+        """
+        normal_item = node.normalItem()
+        quantifier = node.quantifier()
+
+        if normal_item.single():
+            position = self._nfa_single(normal_item.single())
+        elif normal_item.group():
+            position = self._nfa_regex(normal_item.group().regex())
+        else:
+            raise ValueError("不支持的表达式项类型")
+
+        if quantifier:
+            quantifier_text = quantifier.getText()
+            new_start = self.nfa.num_states
+            new_end = self.nfa.num_states + 1
+            self.nfa.num_states += 2
+            self.nfa.rules.extend([[], []])
+
+            if quantifier_text == "?":
+                self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
+            elif quantifier_text == "*":
+                self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
+            elif quantifier_text == "+":
+                self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
+
+            position = NFAPosition(new_start, new_end)
+
+        return position
+
+    def _nfa_single(self, node: regexParser.SingleContext) -> NFAPosition:
+        """
+        构造单个正则表达式元素的NFA。
+        """
+        start = self.nfa.num_states
+        self.nfa.num_states += 1
+        self.nfa.rules.append([])
+
+        end = self.nfa.num_states
+        self.nfa.num_states += 1
+        self.nfa.rules.append([])
+
+        if node.char():
+            char_node = node.char()
+            if char_node.EscapedChar():
+                char = self._parse_control_or_hex_escape(char_node.EscapedChar().getText())
+            else:
+                char = char_node.getText()
+            self.nfa.rules[start].append(Rule(dst=end, type=RuleType.NORMAL, by=char))
+        elif node.characterClass():
+            char_class = self._parse_predefined_char_class(node.characterClass())
+            self.nfa.rules[start].append(Rule(dst=end, type=RuleType.SPECIAL, by=char_class))
+        elif node.AnyCharacter():
+            self.nfa.rules[start].append(Rule(dst=end, type=RuleType.SPECIAL, by="."))
+        elif node.characterGroup():
+            group_position = self._nfa_character_group(node.characterGroup())
+            self.nfa.rules[start].append(Rule(dst=group_position.left, type=RuleType.EPSILON))
+            self.nfa.rules[group_position.right].append(Rule(dst=end, type=RuleType.EPSILON))
+        else:
+            raise ValueError("不支持的单个正则表达式元素类型")
+
+        return NFAPosition(start, end)
+
+    def _nfa_character_group(self, node: regexParser.CharacterGroupContext) -> NFAPosition:
+        """
+        构造字符组的NFA。
+        """
+        start = self.nfa.num_states
+        self.nfa.num_states += 1
+        self.nfa.rules.append([])
+
+        end = self.nfa.num_states
+        self.nfa.num_states += 1
+        self.nfa.rules.append([])
+
+        is_negative = node.characterGroupNegativeModifier() is not None
+        for item in node.characterGroupItem():
+            if item.charInGroup():
+                char = self._parse_char_from_group(item.charInGroup())
+                self.nfa.rules[start].append(Rule(dst=end, type=RuleType.NORMAL, by=char))
+            elif item.characterClass():
+                char_class = self._parse_predefined_char_class(item.characterClass())
+                self.nfa.rules[start].append(Rule(dst=end, type=RuleType.SPECIAL, by=char_class))
+            elif item.characterRange():
+                start_char = self._parse_char_from_group(item.characterRange().charInGroup(0))
+                end_char = self._parse_char_from_group(item.characterRange().charInGroup(1))
+                self.nfa.rules[start].append(Rule(dst=end, type=RuleType.RANGE, by=start_char, to=end_char))
+            else:
+                raise ValueError("不支持的字符组项类型")
+
+        return NFAPosition(start, end)
+
+    def _parse_control_or_hex_escape(self, sequence: str) -> str:
+        """
+        解析转义字符。
+        """
+        escape_map = {
+            "\\f": "\f",
+            "\\n": "\n",
+            "\\r": "\r",
+            "\\t": "\t",
+            "\\v": "\v"
+        }
+        if sequence in escape_map:
+            return escape_map[sequence]
+        if sequence.startswith("\\x"):
+            return chr(int(sequence[2:], 16))
+        return sequence[1] if len(sequence) > 1 else ""
+
+    def _parse_predefined_char_class(self, node: regexParser.CharacterClassContext) -> str:
+        """
+        解析预定义字符类。
+        """
+        if node.CharacterClassAnyWord():
+            return "w"
+        if node.CharacterClassAnyWordInverted():
+            return "W"
+        if node.CharacterClassAnyDecimalDigit():
+            return "d"
+        if node.CharacterClassAnyDecimalDigitInverted():
+            return "D"
+        if node.CharacterClassAnyBlank():
+            return "s"
+        if node.CharacterClassAnyBlankInverted():
+            return "S"
+        return ""
+
+    def _parse_char_from_group(self, node: regexParser.CharInGroupContext) -> str:
+        """
+        解析字符组中的字符。
+        """
+        if node.EscapedChar():
+            return self._parse_control_or_hex_escape(node.EscapedChar().getText())
+        return node.getText()[0]
 
 if __name__ == '__main__':
     """

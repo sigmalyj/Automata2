@@ -37,11 +37,11 @@ class Rule:
     """
     表示一条状态转移规则。
     """
-    dst: int  # 目的状态
-    type: RuleType  # 状态转移的类型，详见RuleType的注释
-    by: str = ""  # 对特殊字符转移，这里只有一个字母，如d；对字符区间转移，这里是区间的开头，如a；对一般转移，这里就是转移所需的字母；对epsilon-转移，这里固定为空串。
-    to: str = ""  # 对字符区间转移，这里是区间的结尾，如z；对任何其他类型的转移，这里固定为空串。
-
+    def __init__(self, dst: int, type: RuleType, by: str = "", to: str = ""):
+        self.dst = dst
+        self.type = type
+        self.by = by
+        self.to = to
 
 class Path:
     """
