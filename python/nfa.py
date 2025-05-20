@@ -79,9 +79,75 @@ class NFA:
         :param text: 输入字符串
         :return: 若拒绝，返回None。若接受，返回一个Path类的对象。
         """
-        # TODO 请你完成这个函数
-        pass
-
+        # 初始化一个栈，栈中存放当前状态、剩余字符串和路径
+        stack = [(0, text, Path())]  # 初态，输入字符串，初始路径
+        visited = set()  # 使用一个集合记录访问过的状态和输入位置组合
+    
+        while stack:
+            # 获取当前状态、剩余字符串和路径
+            state, remaining_text, path = stack.pop()
+    
+            # 如果当前状态和剩余字符串的组合已经访问过，跳过
+            if (state, remaining_text) in visited:
+                continue
+            visited.add((state, remaining_text))  # 标记当前状态和剩余字符串的组合为已访问
+    
+            # 将当前状态加入路径
+            path.states.append(state)
+    
+            # 如果当前状态是终态，返回路径
+            if self.is_final[state] and not remaining_text:
+                return path
+    
+            # 遍历当前状态的所有转移规则
+            for rule in self.rules[state]:
+                if rule.type == RuleType.EPSILON:
+                    # epsilon-转移
+                    new_path = Path()
+                    new_path.states = path.states[:]
+                    new_path.consumes = path.consumes[:]
+                    new_path.consumes.append("")  # 记录空字符消耗
+                    stack.append((rule.dst, remaining_text, new_path))
+                elif remaining_text and self.match_rule(rule, remaining_text[0]):
+                    # 一般转移
+                    new_path = Path()
+                    new_path.states = path.states[:]
+                    new_path.consumes = path.consumes[:]
+                    new_path.consumes.append(remaining_text[0])  # 记录消耗的字符
+                    stack.append((rule.dst, remaining_text[1:], new_path))
+    
+        # 如果没有找到路径，返回拒绝
+        return None
+    
+    
+    def match_rule(self, rule: Rule, c: str) -> bool:
+        """
+        匹配规则是否适用于给定字符。
+        :param rule: 状态转移规则
+        :param c: 输入字符
+        :return: 是否匹配
+        """
+        if rule.type == RuleType.NORMAL:
+            return rule.by == c
+        elif rule.type == RuleType.RANGE:
+            return rule.by <= c <= rule.to
+        elif rule.type == RuleType.SPECIAL:
+            if rule.by == "d":
+                return c.isdigit()
+            elif rule.by == "w":
+                return c.isalnum() or c == "_"
+            elif rule.by == "s":
+                return c.isspace()
+            elif rule.by == "D":
+                return not c.isdigit()
+            elif rule.by == "W":
+                return not (c.isalnum() or c == "_")
+            elif rule.by == "S":
+                return not c.isspace()
+            elif rule.by == ".":
+                return c != "\r" and c != "\n"
+        return False
+    
     @staticmethod
     def from_text(text: str) -> "NFA":
         """
