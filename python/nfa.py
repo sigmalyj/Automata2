@@ -76,18 +76,17 @@ class NFA:
     rules: List[List[Rule]] = []  # 表示所有状态转移规则的二维数组，长为num_states。rules[i]表示从状态i出发的所有转移规则。
 
     def exec(self, text: str, log_func=None) -> Optional[Path]:
+        """
+        执行NFA匹配，支持懒惰匹配。
+        """
         # 使用栈进行深度优先搜索
         stack = [(0, 0, Path())]  # (state, position, path)
-        visited = set()           # 使用(state, position)而非(state, remaining_text)
+        visited = set()           # 使用(state, position)作为访问记录
         
         # 使用传入的日志函数或默认使用print
         log = log_func if log_func else print
         
         log(f"开始匹配文本: '{text}'")
-        
-        # 记录最长匹配路径 - 用于贪婪匹配
-        best_match = None
-        best_match_len = 0
         
         while stack:
             state, pos, path = stack.pop()
@@ -102,84 +101,89 @@ class NFA:
             visited.add(state_pos_key)
             
             # 将当前状态添加到路径
-            path.states.append(state)
+            current_path = Path()
+            current_path.states = path.states.copy()
+            current_path.consumes = path.consumes.copy()
+            current_path.states.append(state)
             
-            # 检查是否为终态
+            # 检查是否为终态 - 立即返回第一个找到的终态路径
             if self.is_final[state]:
-                # 记录当前匹配长度，选择最长的匹配
-                match_len = pos  # 位置就是已匹配的长度
-                if match_len >= best_match_len:
-                    best_match = path
-                    best_match_len = match_len
-                    log(f"发现终态匹配: {state}, 匹配长度: {match_len}")
+                log(f"发现终态匹配: {state}, 匹配长度: {pos}")
+                return current_path
             
-            # 添加各类型的转移
-            normal_transitions = []
-            epsilon_transitions = []
-            negative_transitions = []
+            # 存储所有可能的转移，按照懒惰匹配的需要调整顺序
+            transitions = []
             
+            # 遍历当前状态的所有可能转移
             for rule in self.rules[state]:
+                next_state = rule.dst
+                consumed = ""
+                should_push = False
+                new_pos = pos
+                
                 if rule.type == RuleType.EPSILON:
-                    epsilon_transitions.append(rule)
+                    should_push = True
+                    log(f"  发现 ε-转移 到状态 {rule.dst}")
+                
+                elif rule.type == RuleType.NORMAL:
+                    if pos < len(text) and text[pos] == rule.by:
+                        consumed = text[pos]
+                        should_push = True
+                        new_pos = pos + 1
+                        log(f"  发现普通转移 '{text[pos]}' 到状态 {rule.dst}")
+                
+                elif rule.type == RuleType.SPECIAL:
+                    if pos < len(text) and self.match_rule(rule, text[pos]):
+                        consumed = text[pos]
+                        should_push = True
+                        new_pos = pos + 1
+                        log(f"  发现特殊转移 '{text[pos]}' 到状态 {rule.dst}")
+                
+                elif rule.type == RuleType.RANGE:
+                    if pos < len(text) and rule.by <= text[pos] <= rule.to:
+                        consumed = text[pos]
+                        should_push = True
+                        new_pos = pos + 1
+                        log(f"  发现范围转移 '{text[pos]}' 到状态 {rule.dst}")
+                
                 elif rule.type == RuleType.NEGATIVE:
                     if pos < len(text):
-                        negative_transitions.append(rule)
-                elif pos < len(text) and self.match_rule(rule, text[pos]):
-                    normal_transitions.append(rule)
-            
-            # 处理正常转移(贪婪匹配)
-            for rule in normal_transitions:
-                log(f"  匹配字符 '{text[pos]}' 转移到状态 {rule.dst}")
-                # 一般转移
-                new_path = Path()
-                new_path.states = path.states[:]
-                new_path.consumes = path.consumes[:]
-                new_path.consumes.append(text[pos])  # 记录消耗的字符
-                stack.append((rule.dst, pos + 1, new_path))
-            
-            # 处理负向转移
-            for rule in negative_transitions:
-                # 初始假设转移是有效的
-                valid_transition = True
+                        valid_transition = True
+                        for neg_rule in rule.negativeRules:
+                            if neg_rule.type == RuleType.NORMAL and text[pos] == neg_rule.by:
+                                valid_transition = False
+                                break
+                            elif neg_rule.type == RuleType.SPECIAL and self.match_rule(neg_rule, text[pos]):
+                                valid_transition = False
+                                break
+                            elif neg_rule.type == RuleType.RANGE and neg_rule.by <= text[pos] <= neg_rule.to:
+                                valid_transition = False
+                                break
+                        
+                        if valid_transition:
+                            consumed = text[pos]
+                            should_push = True
+                            new_pos = pos + 1
+                            log(f"  发现负向转移 '{text[pos]}' 到状态 {rule.dst}")
                 
-                # 遍历所有负向规则
-                for neg_rule in rule.negativeRules:
-                    if neg_rule.type == RuleType.NORMAL:
-                        if text[pos] == neg_rule.by:
-                            valid_transition = False  # 字符匹配，负向条件失败
-                            break
-                    elif neg_rule.type == RuleType.SPECIAL:
-                        if self.match_rule(neg_rule, text[pos]):
-                            valid_transition = False  # 特殊字符匹配，负向条件失败
-                            break
-                    elif neg_rule.type == RuleType.RANGE:
-                        if neg_rule.by <= text[pos] <= neg_rule.to:
-                            valid_transition = False  # 范围匹配，负向条件失败
-                            break
-                
-                # 如果转移有效（所有负向规则都不匹配当前字符）
-                if valid_transition:
-                    log(f"  负向匹配字符 '{text[pos]}' 转移到状态 {rule.dst}")
-                    new_path = Path()
-                    new_path.states = path.states[:]
-                    new_path.consumes = path.consumes[:]
-                    new_path.consumes.append(text[pos])  # 记录消耗的字符
-                    stack.append((rule.dst, pos + 1, new_path))
+                # 如果转移有效
+                if should_push:
+                    new_state_pos_key = f"{next_state}_{new_pos}"
+                    if new_state_pos_key not in visited:
+                        new_path = Path()
+                        new_path.states = current_path.states.copy()
+                        new_path.consumes = current_path.consumes.copy()
+                        new_path.consumes.append(consumed)
+                        
+                        # 收集可能的转移
+                        transitions.append((next_state, new_pos, new_path))
             
-            # 处理epsilon转移
-            for rule in epsilon_transitions:
-                log(f"  尝试 ε-转移 到状态 {rule.dst}")
-                # epsilon-转移
-                new_path = Path()
-                new_path.states = path.states[:]
-                new_path.consumes = path.consumes[:]
-                new_path.consumes.append("")  # 记录空字符消耗
-                stack.append((rule.dst, pos, new_path))
-        
-        # 返回找到的最佳匹配
-        if best_match:
-            log(f"返回最佳匹配, 长度: {best_match_len}")
-            return best_match
+            # 反转转移列表，使得将来先处理可能的懒惰匹配路径（epsilon转移会最先被处理）
+            transitions.reverse()
+            
+            # 将收集到的转移按顺序添加到栈中
+            for transition in transitions:
+                stack.append(transition)
         
         log("拒绝")
         return None
@@ -210,6 +214,8 @@ class NFA:
                 return not c.isspace()
             elif rule.by == ".":
                 return c != "\r" and c != "\n"
+            elif rule.by == ",":
+                return True
         return False
 
     @staticmethod
