@@ -31,6 +31,7 @@ class RuleType(Enum):
     RANGE = 1  # 字符区间转移。如 a-z
     SPECIAL = 2  # 特殊转移。如 \d （注意Rule的by属性里面是没有斜杠的，只有一个字母如d）
     EPSILON = 3  # epsilon-转移。
+    NEGATIVE = 4  # 负向转移。表示不匹配的字符。比如 \D 表示不是数字的字符。
 
 
 class Rule:
@@ -42,6 +43,7 @@ class Rule:
         self.type = type
         self.by = by
         self.to = to
+        self.negativeRules = []  # 负向转移规则列表
 
 class Path:
     """
@@ -74,34 +76,28 @@ class NFA:
     rules: List[List[Rule]] = []  # 表示所有状态转移规则的二维数组，长为num_states。rules[i]表示从状态i出发的所有转移规则。
 
     def exec(self, text: str) -> Optional[Path]:
-        """
-        在自动机上执行指定的输入字符串。
-        :param text: 输入字符串
-        :return: 若拒绝，返回None。若接受，返回一个Path类的对象。
-        """
-        # 初始化一个栈，栈中存放当前状态、剩余字符串和路径
-        stack = [(0, text, Path())]  # 初态，输入字符串，初始路径
-        visited = set()  # 使用一个集合记录访问过的状态和输入位置组合
-    
+        stack = [(0, text, Path())]
+        visited = set()
+
+        print(f"开始匹配文本: '{text}'")
         while stack:
-            # 获取当前状态、剩余字符串和路径
             state, remaining_text, path = stack.pop()
-    
-            # 如果当前状态和剩余字符串的组合已经访问过，跳过
+            print(f"当前状态: {state}, 剩余文本: '{remaining_text}', 路径: {path.states}")
+
             if (state, remaining_text) in visited:
                 continue
-            visited.add((state, remaining_text))  # 标记当前状态和剩余字符串的组合为已访问
-    
-            # 将当前状态加入路径
+            visited.add((state, remaining_text))
+
             path.states.append(state)
-    
-            # 如果当前状态是终态，返回路径
-            if self.is_final[state] and not remaining_text:
+
+            if self.is_final[state]:
+                print(f"接受: 状态 {state}")
                 return path
-    
+
             # 遍历当前状态的所有转移规则
             for rule in self.rules[state]:
                 if rule.type == RuleType.EPSILON:
+                    print(f"  尝试 ε-转移 到状态 {rule.dst}")
                     # epsilon-转移
                     new_path = Path()
                     new_path.states = path.states[:]
@@ -109,17 +105,18 @@ class NFA:
                     new_path.consumes.append("")  # 记录空字符消耗
                     stack.append((rule.dst, remaining_text, new_path))
                 elif remaining_text and self.match_rule(rule, remaining_text[0]):
+                    print(f"  匹配字符 '{remaining_text[0]}' 转移到状态 {rule.dst}")
                     # 一般转移
                     new_path = Path()
                     new_path.states = path.states[:]
                     new_path.consumes = path.consumes[:]
                     new_path.consumes.append(remaining_text[0])  # 记录消耗的字符
                     stack.append((rule.dst, remaining_text[1:], new_path))
-    
+
         # 如果没有找到路径，返回拒绝
+        print("拒绝")
         return None
-    
-    
+
     def match_rule(self, rule: Rule, c: str) -> bool:
         """
         匹配规则是否适用于给定字符。
@@ -147,7 +144,7 @@ class NFA:
             elif rule.by == ".":
                 return c != "\r" and c != "\n"
         return False
-    
+
     @staticmethod
     def from_text(text: str) -> "NFA":
         """

@@ -4,7 +4,7 @@ import json
 import sys
 from typing import List
 
-import antlr4.Token
+import antlr4
 from antlr4 import CommonTokenStream, InputStream
 
 from antlr_parser.regexLexer import regexLexer
@@ -28,51 +28,83 @@ class Regex:
     def __init__(self):
         self.nfa = NFA()  # 正则表达式所使用的NFA
         self.flags = ""  # 正则表达式的修饰符
+        # ANTLR解析器相关
+        self.antlr_input_stream = None
+        self.antlr_lexer = None
+        self.antlr_token_stream = None
+        self.antlr_parser = None
 
-    @staticmethod
-    def parse(pattern: str) -> regexParser.RegexContext:
+    def parse(self, pattern: str) -> regexParser.RegexContext:
         """
         解析正则表达式的字符串，生成语法分析树。
         """
-        input_stream = InputStream(pattern)
-        lexer = regexLexer(input_stream)
-        stream = CommonTokenStream(lexer)
-        parser = regexParser(stream)
-        tree = parser.regex()
-        err_count = parser.getNumberOfSyntaxErrors()
+        if self.antlr_input_stream:
+            raise RuntimeError("此Regex对象已被调用过一次parse函数，不可以再次调用！")
+            
+        self.antlr_input_stream = InputStream(pattern)
+        self.antlr_lexer = regexLexer(self.antlr_input_stream)
+        self.antlr_token_stream = CommonTokenStream(self.antlr_lexer)
+        self.antlr_parser = regexParser(self.antlr_token_stream)
+        tree = self.antlr_parser.regex()
+        
+        if not tree:
+            raise RuntimeError("parser解析失败(函数返回了None)")
+            
+        err_count = self.antlr_parser.getNumberOfSyntaxErrors()
         if err_count > 0:
             raise ValueError(f"parser解析失败，表达式中有{err_count}个语法错误！")
+            
+        # 检查是否解析到字符串结尾
+        if self.antlr_token_stream.LA(1) != antlr4.Token.EOF:
+            processed_text = self.antlr_token_stream.getText(
+                self.antlr_token_stream.get(0),
+                self.antlr_token_stream.get(self.antlr_token_stream.index() - 1)
+            )
+            raise RuntimeError(f"parser解析失败，解析过程未能到达字符串结尾，可能是由于表达式中间有无法解析的内容！已解析的部分：{processed_text}")
+            
         return tree
 
     def compile(self, pattern: str, flags: str = "") -> None:
-        """
-        编译给定的正则表达式，构造NFA。
-        """
         self.flags = flags
         tree = self.parse(pattern)
         nfa_position = self._nfa_regex(tree)
+        
+        # 设置终态
         self.nfa.is_final = [False] * self.nfa.num_states
         self.nfa.is_final[nfa_position.right] = True
-
+        
+        # 调试打印
+        print(f"NFA 状态数: {self.nfa.num_states}")
+        print(f"NFA 终态: {nfa_position.right}")
+        print("NFA 规则:")
+        for i, rules in enumerate(self.nfa.rules):
+            print(f"  状态 {i}:")
+            for rule in rules:
+                print(f"    -> 状态 {rule.dst}, 类型: {rule.type}, 字符: '{rule.by}'")
+        
     def match(self, text: str) -> List[str]:
-        """
-        在给定的输入文本上，进行正则表达式匹配，返回匹配到的第一个结果。
-        """
         for i in range(len(text)):
-            path = self.nfa.exec(text[i:])
-            if path:
+            substr = text[i:]
+            print(f"尝试从位置 {i} 匹配: '{substr}'")
+            path = self.nfa.exec(substr)
+            if path and path.states:
                 match_result = "".join(path.consumes)
+                print(f"匹配成功: '{match_result}'")
                 return [match_result]
+            else:
+                print("匹配失败")
         return []
-
+    
     def _nfa_regex(self, node: regexParser.RegexContext) -> NFAPosition:
         """
         构造整个正则表达式的NFA。
         """
+        # 创建初态
         start_state = self.nfa.num_states
         self.nfa.num_states += 1
         self.nfa.rules.append([])
 
+        # 遍历所有子表达式
         sub_positions = []
         for expression in node.expression():
             sub_position = self._nfa_expression(expression)
@@ -81,6 +113,7 @@ class Regex:
             # 从正则表达式的初态到每个子表达式的初态创建ε转移
             self.nfa.rules[start_state].append(Rule(dst=sub_position.left, type=RuleType.EPSILON))
 
+        # 创建终态
         end_state = self.nfa.num_states
         self.nfa.num_states += 1
         self.nfa.rules.append([])
@@ -95,11 +128,18 @@ class Regex:
         """
         构造表达式的NFA。
         """
-        positions = [self._nfa_expression_item(item) for item in node.expressionItem()]
+        # 获取表达式中的所有表达式项
+        items = node.expressionItem()
+        positions = [self._nfa_expression_item(item) for item in items]
 
         if not positions:
-            return NFAPosition(self.nfa.num_states, self.nfa.num_states)
+            # 空表达式，创建一个空的NFA
+            start = self.nfa.num_states
+            self.nfa.num_states += 1
+            self.nfa.rules.append([])
+            return NFAPosition(start, start)
 
+        # 连接各个NFA片段
         for i in range(len(positions) - 1):
             self.nfa.rules[positions[i].right].append(Rule(dst=positions[i + 1].left, type=RuleType.EPSILON))
 
@@ -112,6 +152,7 @@ class Regex:
         normal_item = node.normalItem()
         quantifier = node.quantifier()
 
+        # 处理普通项
         if normal_item.single():
             position = self._nfa_single(normal_item.single())
         elif normal_item.group():
@@ -119,27 +160,56 @@ class Regex:
         else:
             raise ValueError("不支持的表达式项类型")
 
+        # 处理量词
         if quantifier:
             quantifier_text = quantifier.getText()
+            is_lazy = quantifier.lazyModifier() is not None  # True表示是懒惰模式
+            
             new_start = self.nfa.num_states
             new_end = self.nfa.num_states + 1
             self.nfa.num_states += 2
             self.nfa.rules.extend([[], []])
 
-            if quantifier_text == "?":
-                self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
-                self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+            if quantifier_text.startswith("?"):
+                # 0次或1次
+                if is_lazy:
+                    # 懒惰匹配：优先跳过
+                    self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                    self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                else:
+                    # 贪婪匹配：优先匹配
+                    self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                    self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
                 self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
-            elif quantifier_text == "*":
-                self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
-                self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
-                self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
-                self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
-            elif quantifier_text == "+":
-                self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
-                self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
-                self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
-
+            
+            elif quantifier_text.startswith("*"):
+                # 0次或多次
+                if is_lazy:
+                    # 懒惰匹配：优先结束
+                    self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                    self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                    self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                    self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                else:
+                    # 贪婪匹配：优先循环
+                    self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                    self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                    self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                    self.nfa.rules[new_start].append(Rule(dst=new_end, type=RuleType.EPSILON))
+            
+            elif quantifier_text.startswith("+"):
+                # 1次或多次
+                if is_lazy:
+                    # 懒惰匹配：尽快结束
+                    self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                    self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                    self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                else:
+                    # 贪婪匹配：优先循环
+                    self.nfa.rules[position.right].append(Rule(dst=position.left, type=RuleType.EPSILON))
+                    self.nfa.rules[position.right].append(Rule(dst=new_end, type=RuleType.EPSILON))
+                    self.nfa.rules[new_start].append(Rule(dst=position.left, type=RuleType.EPSILON))
+            
             position = NFAPosition(new_start, new_end)
 
         return position
@@ -148,6 +218,7 @@ class Regex:
         """
         构造单个正则表达式元素的NFA。
         """
+        # 创建开始和结束状态
         start = self.nfa.num_states
         self.nfa.num_states += 1
         self.nfa.rules.append([])
@@ -156,22 +227,36 @@ class Regex:
         self.nfa.num_states += 1
         self.nfa.rules.append([])
 
+        # 根据节点类型处理
         if node.char():
+            # 处理单个字符
             char_node = node.char()
+            char_text = char_node.getText()
+            
             if char_node.EscapedChar():
-                char = self._parse_control_or_hex_escape(char_node.EscapedChar().getText())
+                char = self._parse_control_or_hex_escape(char_text)
             else:
-                char = char_node.getText()
+                char = char_text[0]
+                
             self.nfa.rules[start].append(Rule(dst=end, type=RuleType.NORMAL, by=char))
+            
         elif node.characterClass():
+            # 处理字符类
             char_class = self._parse_predefined_char_class(node.characterClass())
             self.nfa.rules[start].append(Rule(dst=end, type=RuleType.SPECIAL, by=char_class))
+            
         elif node.AnyCharacter():
-            self.nfa.rules[start].append(Rule(dst=end, type=RuleType.SPECIAL, by="."))
+            # 处理点号（任意字符）
+            # 根据's'标志决定点号的行为
+            dot_type = "," if self.flags == "s" else "."
+            self.nfa.rules[start].append(Rule(dst=end, type=RuleType.SPECIAL, by=dot_type))
+            
         elif node.characterGroup():
+            # 处理字符组
             group_position = self._nfa_character_group(node.characterGroup())
             self.nfa.rules[start].append(Rule(dst=group_position.left, type=RuleType.EPSILON))
             self.nfa.rules[group_position.right].append(Rule(dst=end, type=RuleType.EPSILON))
+            
         else:
             raise ValueError("不支持的单个正则表达式元素类型")
 
@@ -181,6 +266,7 @@ class Regex:
         """
         构造字符组的NFA。
         """
+        # 创建开始和结束状态
         start = self.nfa.num_states
         self.nfa.num_states += 1
         self.nfa.rules.append([])
@@ -189,20 +275,76 @@ class Regex:
         self.nfa.num_states += 1
         self.nfa.rules.append([])
 
+        # 检查是否为否定字符组
         is_negative = node.characterGroupNegativeModifier() is not None
-        for item in node.characterGroupItem():
-            if item.charInGroup():
-                char = self._parse_char_from_group(item.charInGroup())
-                self.nfa.rules[start].append(Rule(dst=end, type=RuleType.NORMAL, by=char))
-            elif item.characterClass():
-                char_class = self._parse_predefined_char_class(item.characterClass())
-                self.nfa.rules[start].append(Rule(dst=end, type=RuleType.SPECIAL, by=char_class))
-            elif item.characterRange():
-                start_char = self._parse_char_from_group(item.characterRange().charInGroup(0))
-                end_char = self._parse_char_from_group(item.characterRange().charInGroup(1))
-                self.nfa.rules[start].append(Rule(dst=end, type=RuleType.RANGE, by=start_char, to=end_char))
-            else:
-                raise ValueError("不支持的字符组项类型")
+        items = node.characterGroupItem()
+
+        # 根据是否否定分两种情况处理
+        if is_negative:
+            # 处理否定字符组
+            item_start = self.nfa.num_states
+            self.nfa.num_states += 1
+            self.nfa.rules.append([])
+            
+            item_end = self.nfa.num_states
+            self.nfa.num_states += 1
+            self.nfa.rules.append([])
+
+            # 创建否定规则
+            negative_rule = Rule(dst=item_end, type=RuleType.NEGATIVE)
+            negative_rule.negativeRules = []  # 初始化否定规则列表
+            
+            # 添加子规则
+            for item in items:
+                if item.charInGroup():
+                    char = self._parse_char_from_group(item.charInGroup())
+                    neg_rule = Rule(dst=0, type=RuleType.NORMAL, by=char)
+                    negative_rule.negativeRules.append(neg_rule)
+                elif item.characterClass():
+                    char_class = self._parse_predefined_char_class(item.characterClass())
+                    neg_rule = Rule(dst=0, type=RuleType.SPECIAL, by=char_class)
+                    negative_rule.negativeRules.append(neg_rule)
+                elif item.characterRange():
+                    start_char = self._parse_char_from_group(item.characterRange().charInGroup(0))
+                    end_char = self._parse_char_from_group(item.characterRange().charInGroup(1))
+                    neg_rule = Rule(dst=0, type=RuleType.RANGE, by=start_char, to=end_char)
+                    negative_rule.negativeRules.append(neg_rule)
+
+            self.nfa.rules[item_start].append(negative_rule)
+            
+            # 连接规则
+            self.nfa.rules[start].append(Rule(dst=item_start, type=RuleType.EPSILON))
+            self.nfa.rules[item_end].append(Rule(dst=end, type=RuleType.EPSILON))
+        else:
+            # 处理普通字符组
+            for item in items:
+                item_start = self.nfa.num_states
+                self.nfa.num_states += 1
+                self.nfa.rules.append([])
+                
+                item_end = self.nfa.num_states
+                self.nfa.num_states += 1
+                self.nfa.rules.append([])
+                
+                # 创建规则
+                rule = None
+                if item.charInGroup():
+                    char = self._parse_char_from_group(item.charInGroup())
+                    rule = Rule(dst=item_end, type=RuleType.NORMAL, by=char)
+                elif item.characterClass():
+                    char_class = self._parse_predefined_char_class(item.characterClass())
+                    rule = Rule(dst=item_end, type=RuleType.SPECIAL, by=char_class)
+                elif item.characterRange():
+                    start_char = self._parse_char_from_group(item.characterRange().charInGroup(0))
+                    end_char = self._parse_char_from_group(item.characterRange().charInGroup(1))
+                    rule = Rule(dst=item_end, type=RuleType.RANGE, by=start_char, to=end_char)
+                
+                if rule:
+                    self.nfa.rules[item_start].append(rule)
+                
+                # 连接规则
+                self.nfa.rules[start].append(Rule(dst=item_start, type=RuleType.EPSILON))
+                self.nfa.rules[item_end].append(Rule(dst=end, type=RuleType.EPSILON))
 
         return NFAPosition(start, end)
 
@@ -217,11 +359,21 @@ class Regex:
             "\\t": "\t",
             "\\v": "\v"
         }
+        
+        # 检查固定的转义字符
         if sequence in escape_map:
             return escape_map[sequence]
-        if sequence.startswith("\\x"):
-            return chr(int(sequence[2:], 16))
-        return sequence[1] if len(sequence) > 1 else ""
+        
+        # 检查是否为十六进制转义序列
+        if sequence.startswith("\\x") and len(sequence) > 2:
+            try:
+                hex_value = int(sequence[2:], 16)
+                return chr(hex_value)
+            except (ValueError, OverflowError):
+                return '\0'  # 返回空字符代表错误
+        
+        # 默认返回第二个字符
+        return sequence[1] if len(sequence) > 1 else '\0'
 
     def _parse_predefined_char_class(self, node: regexParser.CharacterClassContext) -> str:
         """
@@ -239,7 +391,7 @@ class Regex:
             return "s"
         if node.CharacterClassAnyBlankInverted():
             return "S"
-        return ""
+        return '\0'  # 未找到匹配的字符类
 
     def _parse_char_from_group(self, node: regexParser.CharInGroupContext) -> str:
         """
@@ -248,6 +400,7 @@ class Regex:
         if node.EscapedChar():
             return self._parse_control_or_hex_escape(node.EscapedChar().getText())
         return node.getText()[0]
+
 
 if __name__ == '__main__':
     """
