@@ -2,7 +2,9 @@
 
 import json
 import sys
+import os
 from typing import List
+from datetime import datetime
 
 import antlr4
 from antlr4 import CommonTokenStream, InputStream
@@ -10,6 +12,24 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr_parser.regexLexer import regexLexer
 from antlr_parser.regexParser import regexParser
 from nfa import NFA, Rule, RuleType, Path
+
+# 创建日志文件
+if len(sys.argv) >= 2:
+    # 如果有命令行参数，根据输入文件名命名日志
+    input_filename = os.path.basename(sys.argv[1])  # 获取文件名部分（如 "01.in"）
+    base_filename = os.path.splitext(input_filename)[0]  # 移除扩展名（得到 "01"）
+    log_filename = f"log_{base_filename}.txt"
+else:
+    # 如果没有命令行参数（从标准输入读取），使用时间戳
+    now = datetime.now()
+    log_filename = f"log_{now.strftime('%m%d_%H%M')}.txt"
+
+log_file = open(log_filename, "w")
+
+def log(message):
+    """写入日志文件"""
+    log_file.write(f"{message}\n")
+    log_file.flush()
 
 
 class NFAPosition:
@@ -73,28 +93,28 @@ class Regex:
         self.nfa.is_final = [False] * self.nfa.num_states
         self.nfa.is_final[nfa_position.right] = True
         
-        # 调试打印
-        print(f"NFA 状态数: {self.nfa.num_states}")
-        print(f"NFA 终态: {nfa_position.right}")
-        print("NFA 规则:")
+        # 调试信息写入日志
+        log(f"NFA 状态数: {self.nfa.num_states}")
+        log(f"NFA 终态: {nfa_position.right}")
+        log("NFA 规则:")
         for i, rules in enumerate(self.nfa.rules):
-            print(f"  状态 {i}:")
+            log(f"  状态 {i}:")
             for rule in rules:
-                print(f"    -> 状态 {rule.dst}, 类型: {rule.type}, 字符: '{rule.by}'")
+                log(f"    -> 状态 {rule.dst}, 类型: {rule.type}, 字符: '{rule.by}'")
         
     def match(self, text: str) -> List[str]:
         for i in range(len(text)):
             substr = text[i:]
-            print(f"尝试从位置 {i} 匹配: '{substr}'")
-            path = self.nfa.exec(substr)
+            log(f"尝试从位置 {i} 匹配: '{substr}'")
+            # 将 log 函数传递给 nfa.exec
+            path = self.nfa.exec(substr, log)
             if path and path.states:
                 match_result = "".join(path.consumes)
-                print(f"匹配成功: '{match_result}'")
+                log(f"匹配成功: '{match_result}'")
                 return [match_result]
             else:
-                print("匹配失败")
-        return []
-    
+                log("匹配失败")
+        return []    
     def _nfa_regex(self, node: regexParser.RegexContext) -> NFAPosition:
         """
         构造整个正则表达式的NFA。
@@ -403,42 +423,47 @@ class Regex:
 
 
 if __name__ == '__main__':
-    """
-    程序入口点函数。已经帮你封装好了读取文本输入、调用compile方法和match等方法、输出结果等。
-    一般来说，你不需要阅读和改动这里的代码，只需要完成上面Regex类中的标有TODO的函数即可。
-    """
-    if len(sys.argv) >= 2:
-        with open(sys.argv[1], "r") as f:
-            text = f.read()
-    else:
-        text = sys.stdin.read()
+    try:
+        if len(sys.argv) >= 2:
+            with open(sys.argv[1], "r") as f:
+                text = f.read()
+        else:
+            text = sys.stdin.read()
 
-    typ = ""
-    pattern = None
-    flags = ""
-    input_str = None
-    replacement = None
-    lines = text.splitlines(keepends=True)
-    lenBeforeInputLine = 0
-    for line in lines:
-        if line.startswith("type:"):
-            typ = line[5:].strip()
-        elif line.startswith("pattern: "):
-            pattern = line.splitlines()[0][9:]  # 去掉结尾的换行符
-        elif line.startswith("flags:"):
-            flags = line[6:].strip()
-        elif line.startswith("replacement: "):
-            replacement = line.splitlines()[0][13:]  # 去掉结尾的换行符
-        elif line.startswith("input: "):
-            input_str = text[lenBeforeInputLine + 7:]
-        lenBeforeInputLine += len(line)
-    if pattern is None or input_str is None:
-        raise ValueError("pattern或input未找到！注意pattern: 和input: ，冒号后面必须有空格！")
+        typ = ""
+        pattern = None
+        flags = ""
+        input_str = None
+        replacement = None
+        lines = text.splitlines(keepends=True)
+        lenBeforeInputLine = 0
+        for line in lines:
+            if line.startswith("type:"):
+                typ = line[5:].strip()
+            elif line.startswith("pattern: "):
+                pattern = line.splitlines()[0][9:]  # 去掉结尾的换行符
+            elif line.startswith("flags:"):
+                flags = line[6:].strip()
+            elif line.startswith("replacement: "):
+                replacement = line.splitlines()[0][13:]  # 去掉结尾的换行符
+            elif line.startswith("input: "):
+                input_str = text[lenBeforeInputLine + 7:]
+            lenBeforeInputLine += len(line)
+        if pattern is None or input_str is None:
+            raise ValueError("pattern或input未找到！注意pattern: 和input: ，冒号后面必须有空格！")
 
-    regex = Regex()
-    regex.compile(pattern, flags)
-    if typ == "find" or typ == "match":
-        result = regex.match(input_str)
-        print(json.dumps(result))
-    else:
-        raise ValueError("不支持的输入文件类型！")
+        log(f"处理输入 - 类型: {typ}, 模式: {pattern}, 标志: {flags}")
+        
+        regex = Regex()
+        regex.compile(pattern, flags)
+        if typ == "find" or typ == "match":
+            result = regex.match(input_str)
+            # 这是唯一需要输出到标准输出的结果
+            print(json.dumps(result))
+        else:
+            raise ValueError("不支持的输入文件类型！")
+    except Exception as e:
+        log(f"发生异常: {e}")
+        raise
+    finally:
+        log_file.close()

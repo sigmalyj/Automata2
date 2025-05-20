@@ -75,29 +75,31 @@ class NFA:
     is_final: List[bool] = []  # 用于判断状态是否为终态的数组，长为num_states。is_final[i]为true表示状态i为终态。
     rules: List[List[Rule]] = []  # 表示所有状态转移规则的二维数组，长为num_states。rules[i]表示从状态i出发的所有转移规则。
 
-    def exec(self, text: str) -> Optional[Path]:
+    def exec(self, text: str, log_func=None) -> Optional[Path]:
         stack = [(0, text, Path())]
         visited = set()
-
-        print(f"开始匹配文本: '{text}'")
+        
+        # 使用传入的日志函数或默认使用print
+        log = log_func if log_func else print
+        
+        log(f"开始匹配文本: '{text}'")
         while stack:
             state, remaining_text, path = stack.pop()
-            print(f"当前状态: {state}, 剩余文本: '{remaining_text}', 路径: {path.states}")
-
+            log(f"当前状态: {state}, 剩余文本: '{remaining_text}', 路径: {path.states}")
+            
             if (state, remaining_text) in visited:
                 continue
             visited.add((state, remaining_text))
-
+            
             path.states.append(state)
-
+            
             if self.is_final[state]:
-                print(f"接受: 状态 {state}")
+                log(f"接受: 状态 {state}")
                 return path
-
-            # 遍历当前状态的所有转移规则
+            
             for rule in self.rules[state]:
                 if rule.type == RuleType.EPSILON:
-                    print(f"  尝试 ε-转移 到状态 {rule.dst}")
+                    log(f"  尝试 ε-转移 到状态 {rule.dst}")
                     # epsilon-转移
                     new_path = Path()
                     new_path.states = path.states[:]
@@ -105,16 +107,16 @@ class NFA:
                     new_path.consumes.append("")  # 记录空字符消耗
                     stack.append((rule.dst, remaining_text, new_path))
                 elif remaining_text and self.match_rule(rule, remaining_text[0]):
-                    print(f"  匹配字符 '{remaining_text[0]}' 转移到状态 {rule.dst}")
+                    log(f"  匹配字符 '{remaining_text[0]}' 转移到状态 {rule.dst}")
                     # 一般转移
                     new_path = Path()
                     new_path.states = path.states[:]
                     new_path.consumes = path.consumes[:]
                     new_path.consumes.append(remaining_text[0])  # 记录消耗的字符
                     stack.append((rule.dst, remaining_text[1:], new_path))
-
+    
         # 如果没有找到路径，返回拒绝
-        print("拒绝")
+        log("拒绝")
         return None
 
     def match_rule(self, rule: Rule, c: str) -> bool:

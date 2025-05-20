@@ -1,0 +1,150 @@
+处理输入 - 类型: find, 模式: fox, 标志: 
+NFA 状态数: 8
+NFA 终态: 7
+NFA 规则:
+  状态 0:
+    -> 状态 1, 类型: RuleType.EPSILON, 字符: ''
+  状态 1:
+    -> 状态 2, 类型: RuleType.NORMAL, 字符: 'f'
+  状态 2:
+    -> 状态 3, 类型: RuleType.EPSILON, 字符: ''
+  状态 3:
+    -> 状态 4, 类型: RuleType.NORMAL, 字符: 'o'
+  状态 4:
+    -> 状态 5, 类型: RuleType.EPSILON, 字符: ''
+  状态 5:
+    -> 状态 6, 类型: RuleType.NORMAL, 字符: 'x'
+  状态 6:
+    -> 状态 7, 类型: RuleType.EPSILON, 字符: ''
+  状态 7:
+尝试从位置 0 匹配: 'The quick brown fox jumps over the lazy dog'
+开始匹配文本: 'The quick brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'The quick brown fox jumps over the lazy dog', 路径: []
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'The quick brown fox jumps over the lazy dog', 路径: [0]
+拒绝
+匹配失败
+尝试从位置 1 匹配: 'he quick brown fox jumps over the lazy dog'
+开始匹配文本: 'he quick brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'he quick brown fox jumps over the lazy dog', 路径: [0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'he quick brown fox jumps over the lazy dog', 路径: [0, 0]
+拒绝
+匹配失败
+尝试从位置 2 匹配: 'e quick brown fox jumps over the lazy dog'
+开始匹配文本: 'e quick brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'e quick brown fox jumps over the lazy dog', 路径: [0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'e quick brown fox jumps over the lazy dog', 路径: [0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 3 匹配: ' quick brown fox jumps over the lazy dog'
+开始匹配文本: ' quick brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: ' quick brown fox jumps over the lazy dog', 路径: [0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: ' quick brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 4 匹配: 'quick brown fox jumps over the lazy dog'
+开始匹配文本: 'quick brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'quick brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'quick brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 5 匹配: 'uick brown fox jumps over the lazy dog'
+开始匹配文本: 'uick brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'uick brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'uick brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 6 匹配: 'ick brown fox jumps over the lazy dog'
+开始匹配文本: 'ick brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'ick brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'ick brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 7 匹配: 'ck brown fox jumps over the lazy dog'
+开始匹配文本: 'ck brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'ck brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'ck brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 8 匹配: 'k brown fox jumps over the lazy dog'
+开始匹配文本: 'k brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'k brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'k brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 9 匹配: ' brown fox jumps over the lazy dog'
+开始匹配文本: ' brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: ' brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: ' brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 10 匹配: 'brown fox jumps over the lazy dog'
+开始匹配文本: 'brown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'brown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 11 匹配: 'rown fox jumps over the lazy dog'
+开始匹配文本: 'rown fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'rown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'rown fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 12 匹配: 'own fox jumps over the lazy dog'
+开始匹配文本: 'own fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'own fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'own fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 13 匹配: 'wn fox jumps over the lazy dog'
+开始匹配文本: 'wn fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'wn fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'wn fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 14 匹配: 'n fox jumps over the lazy dog'
+开始匹配文本: 'n fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'n fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'n fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 15 匹配: ' fox jumps over the lazy dog'
+开始匹配文本: ' fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: ' fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: ' fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+拒绝
+匹配失败
+尝试从位置 16 匹配: 'fox jumps over the lazy dog'
+开始匹配文本: 'fox jumps over the lazy dog'
+当前状态: 0, 剩余文本: 'fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  尝试 ε-转移 到状态 1
+当前状态: 1, 剩余文本: 'fox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  匹配字符 'f' 转移到状态 2
+当前状态: 2, 剩余文本: 'ox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+  尝试 ε-转移 到状态 3
+当前状态: 3, 剩余文本: 'ox jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2]
+  匹配字符 'o' 转移到状态 4
+当前状态: 4, 剩余文本: 'x jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3]
+  尝试 ε-转移 到状态 5
+当前状态: 5, 剩余文本: 'x jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4]
+  匹配字符 'x' 转移到状态 6
+当前状态: 6, 剩余文本: ' jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5]
+  尝试 ε-转移 到状态 7
+当前状态: 7, 剩余文本: ' jumps over the lazy dog', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6]
+接受: 状态 7
+匹配成功: 'fox'
