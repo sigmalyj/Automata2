@@ -11,3 +11,6 @@ breakpoint set --file nfa.cpp --name NFA::exec
 程序思路：
 1. 解析特殊转义字符
 2. 从最底层开始建立简单的自动机，然后自底而上地将自动机进行合并
+
+Debug 1:
+d+乃至于+存在问题，导致04.in, 08.in, 09.in以及10.in等匹配出现问题

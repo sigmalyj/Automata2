@@ -76,46 +76,78 @@ class NFA:
     rules: List[List[Rule]] = []  # 表示所有状态转移规则的二维数组，长为num_states。rules[i]表示从状态i出发的所有转移规则。
 
     def exec(self, text: str, log_func=None) -> Optional[Path]:
-        stack = [(0, text, Path())]
-        visited = set()
+        # 使用栈进行深度优先搜索
+        stack = [(0, 0, Path())]  # (state, position, path)
+        visited = set()           # 使用(state, position)而非(state, remaining_text)
         
         # 使用传入的日志函数或默认使用print
         log = log_func if log_func else print
         
         log(f"开始匹配文本: '{text}'")
+        
+        # 记录最长匹配路径 - 用于贪婪匹配
+        best_match = None
+        best_match_len = 0
+        
         while stack:
-            state, remaining_text, path = stack.pop()
-            log(f"当前状态: {state}, 剩余文本: '{remaining_text}', 路径: {path.states}")
+            state, pos, path = stack.pop()
+            remaining_text = text[pos:] if pos < len(text) else ""
             
-            if (state, remaining_text) in visited:
+            log(f"当前状态: {state}, 位置: {pos}, 剩余文本: '{remaining_text}', 路径: {path.states}")
+            
+            # 检查是否已访问过该状态位置组合
+            state_pos_key = f"{state}_{pos}"
+            if state_pos_key in visited:
                 continue
-            visited.add((state, remaining_text))
+            visited.add(state_pos_key)
             
+            # 将当前状态添加到路径
             path.states.append(state)
             
+            # 检查是否为终态
             if self.is_final[state]:
-                log(f"接受: 状态 {state}")
-                return path
+                # 记录当前匹配长度，选择最长的匹配
+                match_len = pos  # 位置就是已匹配的长度
+                if match_len >= best_match_len:
+                    best_match = path
+                    best_match_len = match_len
+                    log(f"发现终态匹配: {state}, 匹配长度: {match_len}")
+            
+            # 首先添加非epsilon转移 - 优先消耗字符(贪婪)
+            normal_transitions = []
+            epsilon_transitions = []
             
             for rule in self.rules[state]:
                 if rule.type == RuleType.EPSILON:
-                    log(f"  尝试 ε-转移 到状态 {rule.dst}")
-                    # epsilon-转移
-                    new_path = Path()
-                    new_path.states = path.states[:]
-                    new_path.consumes = path.consumes[:]
-                    new_path.consumes.append("")  # 记录空字符消耗
-                    stack.append((rule.dst, remaining_text, new_path))
-                elif remaining_text and self.match_rule(rule, remaining_text[0]):
-                    log(f"  匹配字符 '{remaining_text[0]}' 转移到状态 {rule.dst}")
-                    # 一般转移
-                    new_path = Path()
-                    new_path.states = path.states[:]
-                    new_path.consumes = path.consumes[:]
-                    new_path.consumes.append(remaining_text[0])  # 记录消耗的字符
-                    stack.append((rule.dst, remaining_text[1:], new_path))
-    
-        # 如果没有找到路径，返回拒绝
+                    epsilon_transitions.append(rule)
+                elif pos < len(text) and self.match_rule(rule, text[pos]):
+                    normal_transitions.append(rule)
+            
+            # 先处理正常转移(贪婪匹配)
+            for rule in normal_transitions:
+                log(f"  匹配字符 '{text[pos]}' 转移到状态 {rule.dst}")
+                # 一般转移
+                new_path = Path()
+                new_path.states = path.states[:]
+                new_path.consumes = path.consumes[:]
+                new_path.consumes.append(text[pos])  # 记录消耗的字符
+                stack.append((rule.dst, pos + 1, new_path))
+            
+            # 再处理epsilon转移
+            for rule in epsilon_transitions:
+                log(f"  尝试 ε-转移 到状态 {rule.dst}")
+                # epsilon-转移
+                new_path = Path()
+                new_path.states = path.states[:]
+                new_path.consumes = path.consumes[:]
+                new_path.consumes.append("")  # 记录空字符消耗
+                stack.append((rule.dst, pos, new_path))
+        
+        # 返回找到的最佳匹配
+        if best_match:
+            log(f"返回最佳匹配, 长度: {best_match_len}")
+            return best_match
+        
         log("拒绝")
         return None
 

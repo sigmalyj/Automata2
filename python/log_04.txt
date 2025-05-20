@@ -16,98 +16,109 @@ NFA 规则:
   状态 5:
 尝试从位置 0 匹配: 'There is 16 states in this NFA.'
 开始匹配文本: 'There is 16 states in this NFA.'
-当前状态: 0, 剩余文本: 'There is 16 states in this NFA.', 路径: []
+当前状态: 0, 位置: 0, 剩余文本: 'There is 16 states in this NFA.', 路径: []
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: 'There is 16 states in this NFA.', 路径: [0]
+当前状态: 3, 位置: 0, 剩余文本: 'There is 16 states in this NFA.', 路径: [0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: 'There is 16 states in this NFA.', 路径: [0, 3]
+当前状态: 1, 位置: 0, 剩余文本: 'There is 16 states in this NFA.', 路径: [0, 3]
 拒绝
 匹配失败
 尝试从位置 1 匹配: 'here is 16 states in this NFA.'
 开始匹配文本: 'here is 16 states in this NFA.'
-当前状态: 0, 剩余文本: 'here is 16 states in this NFA.', 路径: [0]
+当前状态: 0, 位置: 0, 剩余文本: 'here is 16 states in this NFA.', 路径: [0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: 'here is 16 states in this NFA.', 路径: [0, 0]
+当前状态: 3, 位置: 0, 剩余文本: 'here is 16 states in this NFA.', 路径: [0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: 'here is 16 states in this NFA.', 路径: [0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: 'here is 16 states in this NFA.', 路径: [0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 2 匹配: 'ere is 16 states in this NFA.'
 开始匹配文本: 'ere is 16 states in this NFA.'
-当前状态: 0, 剩余文本: 'ere is 16 states in this NFA.', 路径: [0, 0]
+当前状态: 0, 位置: 0, 剩余文本: 'ere is 16 states in this NFA.', 路径: [0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: 'ere is 16 states in this NFA.', 路径: [0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: 'ere is 16 states in this NFA.', 路径: [0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: 'ere is 16 states in this NFA.', 路径: [0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: 'ere is 16 states in this NFA.', 路径: [0, 0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 3 匹配: 're is 16 states in this NFA.'
 开始匹配文本: 're is 16 states in this NFA.'
-当前状态: 0, 剩余文本: 're is 16 states in this NFA.', 路径: [0, 0, 0]
+当前状态: 0, 位置: 0, 剩余文本: 're is 16 states in this NFA.', 路径: [0, 0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: 're is 16 states in this NFA.', 路径: [0, 0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: 're is 16 states in this NFA.', 路径: [0, 0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: 're is 16 states in this NFA.', 路径: [0, 0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: 're is 16 states in this NFA.', 路径: [0, 0, 0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 4 匹配: 'e is 16 states in this NFA.'
 开始匹配文本: 'e is 16 states in this NFA.'
-当前状态: 0, 剩余文本: 'e is 16 states in this NFA.', 路径: [0, 0, 0, 0]
+当前状态: 0, 位置: 0, 剩余文本: 'e is 16 states in this NFA.', 路径: [0, 0, 0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: 'e is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: 'e is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: 'e is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: 'e is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 5 匹配: ' is 16 states in this NFA.'
 开始匹配文本: ' is 16 states in this NFA.'
-当前状态: 0, 剩余文本: ' is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0]
+当前状态: 0, 位置: 0, 剩余文本: ' is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: ' is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: ' is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: ' is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: ' is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 6 匹配: 'is 16 states in this NFA.'
 开始匹配文本: 'is 16 states in this NFA.'
-当前状态: 0, 剩余文本: 'is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0]
+当前状态: 0, 位置: 0, 剩余文本: 'is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: 'is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: 'is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: 'is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: 'is 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 7 匹配: 's 16 states in this NFA.'
 开始匹配文本: 's 16 states in this NFA.'
-当前状态: 0, 剩余文本: 's 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0]
+当前状态: 0, 位置: 0, 剩余文本: 's 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: 's 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: 's 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: 's 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: 's 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 8 匹配: ' 16 states in this NFA.'
 开始匹配文本: ' 16 states in this NFA.'
-当前状态: 0, 剩余文本: ' 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0]
+当前状态: 0, 位置: 0, 剩余文本: ' 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: ' 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: ' 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: ' 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: ' 16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
 拒绝
 匹配失败
 尝试从位置 9 匹配: '16 states in this NFA.'
 开始匹配文本: '16 states in this NFA.'
-当前状态: 0, 剩余文本: '16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+当前状态: 0, 位置: 0, 剩余文本: '16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 3
-当前状态: 3, 剩余文本: '16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+当前状态: 3, 位置: 0, 剩余文本: '16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   尝试 ε-转移 到状态 1
-当前状态: 1, 剩余文本: '16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
+当前状态: 1, 位置: 0, 剩余文本: '16 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
   匹配字符 '1' 转移到状态 2
-当前状态: 2, 剩余文本: '6 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1]
+当前状态: 2, 位置: 1, 剩余文本: '6 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1]
   尝试 ε-转移 到状态 1
   尝试 ε-转移 到状态 4
-当前状态: 4, 剩余文本: '6 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2]
+当前状态: 4, 位置: 1, 剩余文本: '6 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2]
   尝试 ε-转移 到状态 5
-当前状态: 5, 剩余文本: '6 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 4]
-接受: 状态 5
-匹配成功: '1'
+当前状态: 5, 位置: 1, 剩余文本: '6 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 4]
+发现终态匹配: 5, 匹配长度: 1
+当前状态: 1, 位置: 1, 剩余文本: '6 states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2]
+  匹配字符 '6' 转移到状态 2
+当前状态: 2, 位置: 2, 剩余文本: ' states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 1]
+  尝试 ε-转移 到状态 1
+  尝试 ε-转移 到状态 4
+当前状态: 4, 位置: 2, 剩余文本: ' states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 1, 2]
+  尝试 ε-转移 到状态 5
+当前状态: 5, 位置: 2, 剩余文本: ' states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 1, 2, 4]
+发现终态匹配: 5, 匹配长度: 2
+当前状态: 1, 位置: 2, 剩余文本: ' states in this NFA.', 路径: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 1, 2]
+返回最佳匹配, 长度: 2
+匹配成功: '16'
